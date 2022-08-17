@@ -72,7 +72,7 @@ function getCurrentBranch(path: string): string {
 	return result.toString().trimStart().trimEnd().replace("origin/", "");
 }
 
-function makeQuickPick(branches: string[]): vscode.QuickPickItem[] {
+function makeBranchesQuickPick(branches: string[]): vscode.QuickPickItem[] {
 	let list: vscode.QuickPickItem[] = [];
 	branches = branches.sort(function (a, b) { return a.localeCompare(b); });
 	branches.forEach(branch => {
@@ -90,7 +90,7 @@ function push(path: string) {
 	const list = getOriginBranches(path);
 	currentBranch = getCurrentBranch(path);
 
-	vscode.window.showQuickPick(makeQuickPick(list), { canPickMany: false, title: "Select the branch to push to" }).then(branch => {
+	vscode.window.showQuickPick(makeBranchesQuickPick(list), { canPickMany: false, title: "Select the branch to push to" }).then(branch => {
 		if (branch !== undefined) {
 			const branchName: string = branch!.label;
 			const pushString: string[] = ["push", "origin", "HEAD:refs/for/" + branchName.replace(ICON, "")];
