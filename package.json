@@ -20,7 +20,24 @@
         "command": "gerrit-tools.pushToGerrit",
         "title": "Push to Gerrit"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Gerrit Tools",
+      "properties": {
+        "gerrit-tools.push.defaultPushOption": {
+          "description": "Specifies the first option when the prompt for when pushing",
+          "type": "string",
+          "default": "None",
+          "enum": [
+            "None",
+            "Work in Progress",
+            "Private",
+            "Remove Work in Progress",
+            "Remove Private"
+          ]
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

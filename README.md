@@ -8,14 +8,12 @@ Use Push to Gerrit to push.
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+You must have git installed.
 
 ## Extension Settings
 
 This extension contributes the following settings:
-None Yet.
-<!-- * `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something. -->
+* `gerrit-tools.push.defaultPushOption`: Specifies the default push option to be used, can always be changed on every push.
 
 ## Known Issues
 
