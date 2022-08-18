@@ -11,10 +11,28 @@ const CURRENT_BRANCH_ICON = "$(star) ";
 var currentBranch = "";
 
 enum PushFlags {
+	NONE,
 	WIP,
-	PRIVATE
+	PRIVATE,
+	READY,
+	REMOVE_PRIVATE
 }
 
+const PushFlagsStrings: Map<PushFlags, string> = new Map<PushFlags, string>([
+	[PushFlags.NONE, ""],
+	[PushFlags.WIP, "%wip"],
+	[PushFlags.PRIVATE, "%private"],
+	[PushFlags.READY, "%ready"],
+	[PushFlags.REMOVE_PRIVATE, "%remove-private"]
+]);
+
+const PushFlagsPickOptions: Map<string, PushFlags> = new Map<string, PushFlags>([
+	["None", PushFlags.NONE],
+	["Work in Progress", PushFlags.WIP],
+	["Private", PushFlags.PRIVATE],
+	["Remove Work in Progress", PushFlags.READY],
+	["Remove Private", PushFlags.REMOVE_PRIVATE]
+]);
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -91,7 +109,10 @@ function makeBranchesQuickPick(branches: string[]): vscode.QuickPickItem[] {
 }
 
 function makePushFlagsQuickPick(): vscode.QuickPickItem[] {
-	let list: vscode.QuickPickItem[] = [{ label: "Work in Progress" }, { label: "Private" }];
+	let list: vscode.QuickPickItem[] = [];
+	for (let option of PushFlagsPickOptions.keys()) {
+		list.push({ label: option });
+	}
 	return list;
 }
 
@@ -103,19 +124,12 @@ function push(path: string) {
 	vscode.window.showQuickPick(makeBranchesQuickPick(list), { canPickMany: false, title: "Select the branch to push to" }).then(branch => {
 		if (branch !== undefined) {
 			const branchName: string = branch!.label;
-			vscode.window.showQuickPick(makePushFlagsQuickPick(), { canPickMany: true, title: "Select push options" }).then(flags => {
+			vscode.window.showQuickPick(makePushFlagsQuickPick(), { canPickMany: false, title: "Select push options" }).then(flagSelection => {
 				let pushFlagsString: string = "";
-				if (flags !== undefined) {
-					let pushFlags: PushFlags[] = [];
-					flags!.forEach(flag => {
-						const flagStr: string = flag.label;
-						if (flagStr === "Work in Progress") {
-							pushFlags.push(PushFlags.WIP);
-						} else if (flagStr === "Private") {
-							pushFlags.push(PushFlags.PRIVATE);
-						}
-					});
-					pushFlagsString = getPushFlagsString(pushFlags);
+				if (flagSelection !== undefined) {
+					const flagStr: string = flagSelection!.label;
+					const flag: PushFlags = PushFlagsPickOptions.get(flagStr)!;
+					pushFlagsString = PushFlagsStrings.get(flag)!;
 				}
 
 				const pushString: string[] = ["push", "origin", "HEAD:refs/for/" + branchName.replace(CURRENT_BRANCH_ICON, "") + pushFlagsString];
@@ -155,29 +169,4 @@ function pushViaTask(args: string[], path: string): Thenable<vscode.TaskExecutio
 	const task = new vscode.Task({ type: 'gerrit' }, vscode.TaskScope.Workspace, TASK_NAME, "gerrit", shell);
 	task.presentationOptions = { reveal: vscode.TaskRevealKind.Never };
 	return vscode.tasks.executeTask(task);
-}
-
-function getPushFlagsString(flags: PushFlags[]): string {
-	let flagString: string = "";
-	const firstCommandStart: string = "%";
-	const multipleCommandStart: string = ",";
-	flags.forEach(flag => {
-		let seperator: string = "";
-		if (flagString.length === 0) {
-			seperator = firstCommandStart;
-		} else {
-			seperator = multipleCommandStart;
-		}
-		switch (flag) {
-			case PushFlags.WIP:
-				flagString += seperator + "wip";
-				break;
-			case PushFlags.PRIVATE:
-				flagString += seperator + "private";
-				break;
-			default:
-				break;
-		}
-	});
-	return flagString;
 }
