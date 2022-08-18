@@ -33,10 +33,18 @@ const PushFlagsPickOptions: Map<string, PushFlags> = new Map<string, PushFlags>(
 	["Remove Work in Progress", PushFlags.READY],
 	["Remove Private", PushFlags.REMOVE_PRIVATE]
 ]);
+
+type Settings = {
+	push_defaultPushOption: PushFlags;
+}
+
+var settings: Settings = { push_defaultPushOption: PushFlags.NONE };
+
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
+	updateSettings();
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "gerrit-tools" is now active!');
@@ -48,12 +56,21 @@ export function activate(context: vscode.ExtensionContext) {
 		getWorkspaceFsPath().then(path => push(path!));
 		// vscode.window.showQuickPick(["cool", "bar"], { canPickMany: true, title: "Select the branch to push to" });
 	});
-
+	context.subscriptions.push(disposable);
+	disposable = vscode.workspace.onDidChangeConfiguration(updateSettings);
 	context.subscriptions.push(disposable);
 }
 
 // this method is called when your extension is deactivated
 export function deactivate() { }
+
+function updateSettings() {
+	console.log("Updating settings");
+	let configuration = vscode.workspace.getConfiguration("gerrit-tools");
+	if (configuration.has("push.defaultPushOption")) {
+		settings.push_defaultPushOption = PushFlagsPickOptions.get(configuration.get("push.defaultPushOption")!)!;
+	}
+}
 
 async function getWorkspaceFsPath() {
 	if (vscode.workspace.workspaceFolders!.length > 1) {
@@ -110,8 +127,12 @@ function makeBranchesQuickPick(branches: string[]): vscode.QuickPickItem[] {
 
 function makePushFlagsQuickPick(): vscode.QuickPickItem[] {
 	let list: vscode.QuickPickItem[] = [];
-	for (let option of PushFlagsPickOptions.keys()) {
-		list.push({ label: option });
+	for (let [option, enumVal] of PushFlagsPickOptions) {
+		if (enumVal === settings.push_defaultPushOption) {
+			list.splice(0, 0, { label: option });
+		} else {
+			list.push({ label: option });
+		}
 	}
 	return list;
 }
