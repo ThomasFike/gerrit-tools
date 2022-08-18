@@ -6,14 +6,45 @@ import * as vscode from 'vscode';
 
 let DEBUG = false;
 const TASK_NAME = "gerrit-tools";
-const ICON = "$(star) "
+const CURRENT_BRANCH_ICON = "$(star) ";
 
 var currentBranch = "";
+
+enum PushFlags {
+	NONE,
+	WIP,
+	PRIVATE,
+	READY,
+	REMOVE_PRIVATE
+}
+
+const PushFlagsStrings: Map<PushFlags, string> = new Map<PushFlags, string>([
+	[PushFlags.NONE, ""],
+	[PushFlags.WIP, "%wip"],
+	[PushFlags.PRIVATE, "%private"],
+	[PushFlags.READY, "%ready"],
+	[PushFlags.REMOVE_PRIVATE, "%remove-private"]
+]);
+
+const PushFlagsPickOptions: Map<string, PushFlags> = new Map<string, PushFlags>([
+	["None", PushFlags.NONE],
+	["Work in Progress", PushFlags.WIP],
+	["Private", PushFlags.PRIVATE],
+	["Remove Work in Progress", PushFlags.READY],
+	["Remove Private", PushFlags.REMOVE_PRIVATE]
+]);
+
+type Settings = {
+	push_defaultPushOption: PushFlags;
+}
+
+var settings: Settings = { push_defaultPushOption: PushFlags.NONE };
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
+	updateSettings();
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "gerrit-tools" is now active!');
@@ -25,12 +56,21 @@ export function activate(context: vscode.ExtensionContext) {
 		getWorkspaceFsPath().then(path => push(path!));
 		// vscode.window.showQuickPick(["cool", "bar"], { canPickMany: true, title: "Select the branch to push to" });
 	});
-
+	context.subscriptions.push(disposable);
+	disposable = vscode.workspace.onDidChangeConfiguration(updateSettings);
 	context.subscriptions.push(disposable);
 }
 
 // this method is called when your extension is deactivated
 export function deactivate() { }
+
+function updateSettings() {
+	console.log("Updating settings");
+	let configuration = vscode.workspace.getConfiguration("gerrit-tools");
+	if (configuration.has("push.defaultPushOption")) {
+		settings.push_defaultPushOption = PushFlagsPickOptions.get(configuration.get("push.defaultPushOption")!)!;
+	}
+}
 
 async function getWorkspaceFsPath() {
 	if (vscode.workspace.workspaceFolders!.length > 1) {
@@ -72,16 +112,28 @@ function getCurrentBranch(path: string): string {
 	return result.toString().trimStart().trimEnd().replace("origin/", "");
 }
 
-function makeQuickPick(branches: string[]): vscode.QuickPickItem[] {
+function makeBranchesQuickPick(branches: string[]): vscode.QuickPickItem[] {
 	let list: vscode.QuickPickItem[] = [];
 	branches = branches.sort(function (a, b) { return a.localeCompare(b); });
 	branches.forEach(branch => {
 		if (branch === currentBranch) {
-			list.splice(0, 0, { label: ICON + branch }, { label: "Other Branches", kind: vscode.QuickPickItemKind.Separator });
+			list.splice(0, 0, { label: CURRENT_BRANCH_ICON + branch }, { label: "Other Branches", kind: vscode.QuickPickItemKind.Separator });
 		} else {
 			list.push({ label: branch });
 		}
 	});
+	return list;
+}
+
+function makePushFlagsQuickPick(): vscode.QuickPickItem[] {
+	let list: vscode.QuickPickItem[] = [];
+	for (let [option, enumVal] of PushFlagsPickOptions) {
+		if (enumVal === settings.push_defaultPushOption) {
+			list.splice(0, 0, { label: option });
+		} else {
+			list.push({ label: option });
+		}
+	}
 	return list;
 }
 
@@ -90,32 +142,42 @@ function push(path: string) {
 	const list = getOriginBranches(path);
 	currentBranch = getCurrentBranch(path);
 
-	vscode.window.showQuickPick(makeQuickPick(list), { canPickMany: false, title: "Select the branch to push to" }).then(branch => {
+	vscode.window.showQuickPick(makeBranchesQuickPick(list), { canPickMany: false, title: "Select the branch to push to" }).then(branch => {
 		if (branch !== undefined) {
 			const branchName: string = branch!.label;
-			const pushString: string[] = ["push", "origin", "HEAD:refs/for/" + branchName.replace(ICON, "")];
-			var taskEndSucscription = vscode.tasks.onDidEndTaskProcess((task) => {
-				if (task.execution.task.name === TASK_NAME) {
-					if (task.exitCode) {
-						vscode.window.showErrorMessage("Failed to push", "Show").then(result => {
-							if (result === undefined) {
-								console.log("Dismissed Error");
-							} else {
-								console.log("Showed Terminal");
-								vscode.window.terminals.forEach(term => {
-									if (term.name === TASK_NAME) {
-										term.show(false);
-									}
-								});
-							}
-						});
-					} else {
-						console.log("Push worked");
-						vscode.window.showInformationMessage("Pushed to " + branchName.replace(ICON, "") + ".");
-					}
+			vscode.window.showQuickPick(makePushFlagsQuickPick(), { canPickMany: false, title: "Select push options" }).then(flagSelection => {
+				let pushFlagsString: string = "";
+				if (flagSelection !== undefined) {
+					const flagStr: string = flagSelection!.label;
+					const flag: PushFlags = PushFlagsPickOptions.get(flagStr)!;
+					pushFlagsString = PushFlagsStrings.get(flag)!;
 				}
+
+				const pushString: string[] = ["push", "origin", "HEAD:refs/for/" + branchName.replace(CURRENT_BRANCH_ICON, "") + pushFlagsString];
+				var taskEndSucscription = vscode.tasks.onDidEndTaskProcess((task) => {
+					if (task.execution.task.name === TASK_NAME) {
+						if (task.exitCode) {
+							vscode.window.showErrorMessage("Failed to push", "Show").then(result => {
+								if (result === undefined) {
+									console.log("Dismissed Error");
+								} else {
+									console.log("Showed Terminal");
+									vscode.window.terminals.forEach(term => {
+										if (term.name === TASK_NAME) {
+											term.show(false);
+										}
+									});
+								}
+							});
+						} else {
+							console.log("Push worked");
+							vscode.window.showInformationMessage("Pushed to " + branchName.replace(CURRENT_BRANCH_ICON, "") + ".");
+						}
+					}
+				});
+				pushViaTask(pushString, path).then(executor => { var taskExecutor = executor; });
 			});
-			pushViaTask(pushString, path).then(executor => { var taskExecutor = executor; });
+
 		} else {
 			vscode.window.showErrorMessage("No Branch Selected");
 		}
