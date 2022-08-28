@@ -1,4 +1,8 @@
 # Change Log
+
+## 1.0.1
+- Add change notes for 1.0.0 because they were forgotten
+
 ## 1.0.0
 - Add Changelog to the correct place
 - Update package.json to include all important info
