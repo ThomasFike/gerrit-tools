@@ -3,7 +3,13 @@
   "displayName": "Gerrit Tools",
   "publisher": "ThomasFike",
   "repository": {
+    "type": "git",
     "url": "https://github.com/ThomasFike/gerrit-tools"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "homepage": "http://ThomasFike.com",
+  "bugs": {
+    "url": "https://github.com/ThomasFike/gerrit-tools/issues"
   },
   "description": "Adds tools for gerrit code review to vscode",
   "keywords": [
