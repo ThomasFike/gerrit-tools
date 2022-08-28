@@ -15,6 +15,9 @@ You must have git installed.
 This extension contributes the following settings:
 * `gerrit-tools.push.defaultPushOption`: Specifies the default push option to be used, can always be changed on every push.
 
+## Extension Keybindings
+* Push to Gerrit: `ctrl+Shift+G P`
+
 ## Known Issues
 
 ---
