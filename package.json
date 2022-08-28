@@ -40,7 +40,13 @@
           ]
         }
       }
-    }
+    },
+    "keybindings": [
+      {
+        "command": "gerrit-tools.pushToGerrit",
+        "key": "ctrl+shift+g p"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
