@@ -6,6 +6,10 @@
     "url": "https://github.com/ThomasFike/gerrit-tools"
   },
   "description": "Adds tools for gerrit code review to vscode",
+  "keywords": [
+    "Gerrit",
+    "Git"
+  ],
   "version": "0.0.2",
   "engines": {
     "vscode": "^1.70.0"
