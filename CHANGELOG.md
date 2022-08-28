@@ -1,4 +1,8 @@
 # Change Log
+## 1.0.0
+- Add Changelog to the correct place
+- Update package.json to include all important info
+- Add keyboard shortcut for pushing
 
 ## 0.0.2
 
