@@ -3,6 +3,7 @@
 import { exec, execSync } from 'child_process';
 import { stringify } from 'querystring';
 import * as vscode from 'vscode';
+import * as utils from './utils';
 
 let DEBUG = false;
 const TASK_NAME = "gerrit-tools";
@@ -85,12 +86,6 @@ async function getWorkspaceFsPath() {
 	}
 }
 
-function fetch(path: string) {
-	execSync("git fetch", {
-		cwd: path
-	});
-}
-
 function getOriginBranches(path: string): string[] {
 	let result = execSync("git branch -r", {
 		cwd: path
@@ -138,7 +133,7 @@ function makePushFlagsQuickPick(): vscode.QuickPickItem[] {
 }
 
 function push(path: string) {
-	fetch(path);
+	utils.fetch(path);
 	const list = getOriginBranches(path);
 	currentBranch = getCurrentBranch(path);
 
