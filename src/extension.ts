@@ -4,6 +4,8 @@ import { exec, execSync } from 'child_process';
 import { stringify } from 'querystring';
 import * as vscode from 'vscode';
 import * as utils from './utils';
+import { PushFlags, PushFlagsStrings, PushFlagsPickOptions } from './types';
+import { Settings } from './settings';
 
 let DEBUG = false;
 const TASK_NAME = "gerrit-tools";
@@ -11,41 +13,14 @@ const CURRENT_BRANCH_ICON = "$(star) ";
 
 var currentBranch = "";
 
-enum PushFlags {
-	NONE,
-	WIP,
-	PRIVATE,
-	READY,
-	REMOVE_PRIVATE
-}
 
-const PushFlagsStrings: Map<PushFlags, string> = new Map<PushFlags, string>([
-	[PushFlags.NONE, ""],
-	[PushFlags.WIP, "%wip"],
-	[PushFlags.PRIVATE, "%private"],
-	[PushFlags.READY, "%ready"],
-	[PushFlags.REMOVE_PRIVATE, "%remove-private"]
-]);
-
-const PushFlagsPickOptions: Map<string, PushFlags> = new Map<string, PushFlags>([
-	["None", PushFlags.NONE],
-	["Work in Progress", PushFlags.WIP],
-	["Private", PushFlags.PRIVATE],
-	["Remove Work in Progress", PushFlags.READY],
-	["Remove Private", PushFlags.REMOVE_PRIVATE]
-]);
-
-type Settings = {
-	push_defaultPushOption: PushFlags;
-}
-
-var settings: Settings = { push_defaultPushOption: PushFlags.NONE };
+var settings: Settings = new Settings();
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
-	updateSettings();
+	settings.updateSettings();
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "gerrit-tools" is now active!');
@@ -58,20 +33,13 @@ export function activate(context: vscode.ExtensionContext) {
 		// vscode.window.showQuickPick(["cool", "bar"], { canPickMany: true, title: "Select the branch to push to" });
 	});
 	context.subscriptions.push(disposable);
-	disposable = vscode.workspace.onDidChangeConfiguration(updateSettings);
+	disposable = vscode.workspace.onDidChangeConfiguration(settings.updateSettings);
 	context.subscriptions.push(disposable);
 }
 
 // this method is called when your extension is deactivated
 export function deactivate() { }
 
-function updateSettings() {
-	console.log("Updating settings");
-	let configuration = vscode.workspace.getConfiguration("gerrit-tools");
-	if (configuration.has("push.defaultPushOption")) {
-		settings.push_defaultPushOption = PushFlagsPickOptions.get(configuration.get("push.defaultPushOption")!)!;
-	}
-}
 
 async function getWorkspaceFsPath() {
 	if (vscode.workspace.workspaceFolders!.length > 1) {
