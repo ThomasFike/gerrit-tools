@@ -12,16 +12,16 @@ export class sshDetails {
             cwd: path
         }).toString();
         let regex = new RegExp("ssh:\/*(\\S*):([0-9]*)", "gmi");
-        let m;
+        let match;
         let str: string = result.toString();
-        while ((m = regex.exec(str)) !== null) {
+        while ((match = regex.exec(str)) !== null) {
             // This is necessary to avoid infinite loops with zero-width matches
-            if (m.index === regex.lastIndex) {
+            if (match.index === regex.lastIndex) {
                 regex.lastIndex++;
             }
 
             // The result can be accessed through the `m`-variable.
-            m.forEach((match, groupIndex) => {
+            match.forEach((match, groupIndex) => {
                 if (groupIndex === 1) {
                     this.address = match;
                 } else if (groupIndex === 2) {
