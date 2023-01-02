@@ -54,6 +54,8 @@ function pushToBranch(branchName: string, path: string) {
             const flagStr: string = flagSelection!.label;
             const flag: PushFlags = PushFlagsPickOptions.get(flagStr)!;
             pushFlagsString = PushFlagsStrings.get(flag)!;
+        } else {
+            return;
         }
 
         const pushString: string[] = ["push", "origin", "HEAD:refs/for/" + branchName.replace(CURRENT_BRANCH_ICON, "") + pushFlagsString];
